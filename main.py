@@ -46,8 +46,9 @@ def custom_openapi() -> dict:
         app.openapi_schema = get_openapi(
             title=app.title, version=app.version, routes=app.routes
         )
-        # Валидация возвращает 400 вместо 422.
-        app.openapi_schema["paths"]["/predict"]["post"]["responses"].pop("422", None)
+        # Валидация возвращает 400 вместо 422
+        for path, method in (("/predict", "post"), ("/simple_predict", "get")):
+            app.openapi_schema["paths"][path][method]["responses"].pop("422", None)
     return app.openapi_schema
 
 

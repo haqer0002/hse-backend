@@ -1,3 +1,5 @@
+from database import connect_db
+from repositories.items import ItemRepository
 from repositories.predictions import PredictionRepository
 from schemas.prediction import PredictRequest
 
@@ -12,3 +14,11 @@ class PredictionService:
         )
         self._repository.save(advertisement.item_id, has_violations)
         return has_violations
+
+    async def predict_item(self, item_id: int) -> bool | None:
+        async with connect_db() as connection:
+            advertisement = await ItemRepository(connection).get_for_prediction(item_id)
+
+        if advertisement is None:
+            return None
+        return self.predict(advertisement)

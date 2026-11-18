@@ -6,8 +6,13 @@
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+docker compose up -d --wait
+pgmigrate -d db -t latest migrate
 fastapi dev
 ```
+
+При сборке `psycopg2` из исходников нужен `pg_config` из клиентских
+инструментов PostgreSQL. Он должен быть доступен в `PATH`.
 
 После запуска сервис доступен на [localhost:8000](http://127.0.0.1:8000),
 документация Swagger – на [/docs](http://127.0.0.1:8000/docs).
@@ -68,24 +73,37 @@ curl -X POST http://127.0.0.1:8000/predict \
 В ответе с ошибкой есть поле `detail` с её описанием.
 Для `500` возвращается `{"detail": "Internal Server Error"}`.
 
+## GET /simple_predict
+
+Передай ID существующего объявления в параметре `item_id`.
+
+```bash
+curl 'http://127.0.0.1:8000/simple_predict?item_id=1'
+```
+
+Сервис читает объявление и статус продавца одним запросом к PostgreSQL
+и возвращает `true` или `false` по тому же правилу, что и `/predict`.
+При неверном ID ответ будет `400`, при отсутствии объявления – `404`.
+
 ## Структура
 
 - `main.py` – приложение, корневой маршрут и обработка ошибок.
-- `routers/users.py` – обработчик `/predict`.
+- `routers/users.py` – обработчики `/predict` и `/simple_predict`.
 - `schemas/prediction.py` – поля запроса и проверка типов.
 - `services/prediction.py` – правило модерации.
 - `repositories/predictions.py` – хранение последнего результата по `item_id`
   в памяти. После перезапуска результаты теряются.
+- `repositories/users.py` и `repositories/items.py` – запросы к PostgreSQL.
+- `db/` – миграция и настройки подключения для `pgmigrate`.
 - `tests/` – тесты API и сервиса.
 
 ## Тесты
 
-В том же виртуальном окружении:
+Запусти PostgreSQL и примени миграцию. Затем в том же виртуальном окружении:
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest -q
+python -m pytest -q tests
 ```
 
-В тестах есть все четыре случая из таблицы, пропущенные поля, неверные типы,
-некорректные запросы и ошибки сервиса и репозитория.
+Фикстуры создают записи пользователей и объявлений и удаляют их после тестов.

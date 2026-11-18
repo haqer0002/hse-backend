@@ -1,2 +1,5 @@
 fastapi[standard]==0.162.4
 pydantic==2.14.3
+asyncpg==0.32.0
+psycopg2-binary==2.9.13
+yandex-pgmigrate==1.0.13
